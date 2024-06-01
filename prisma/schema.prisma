@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id           Int            @id @default(autoincrement())
+    wallet       String         @unique
+    followers    FollowerRel[]  @relation("UserFollowers")
+    following    FollowingRel[] @relation("UserFollowing")
+    memecoins    MemeCoin[]
+    comments     Comment[]
+    transactions Transaction[]
+    FollowerRel  FollowerRel[]  @relation("UserFollowing")
+    FollowingRel FollowingRel[] @relation("UserFollowers")
+}
+
+model FollowerRel {
+    id         Int  @id @default(autoincrement())
+    userId     Int
+    followerId Int
+    user       User @relation("UserFollowers", fields: [userId], references: [id])
+    follower   User @relation("UserFollowing", fields: [followerId], references: [id])
+
+    @@unique([userId, followerId])
+}
+
+model FollowingRel {
+    id          Int  @id @default(autoincrement())
+    userId      Int
+    followingId Int
+    user        User @relation("UserFollowing", fields: [userId], references: [id])
+    following   User @relation("UserFollowers", fields: [followingId], references: [id])
+
+    @@unique([userId, followingId])
+}
+
+model MemeCoin {
+    id              Int           @id @default(autoincrement())
+    amount          Float
+    transactionHash String        @unique
+    userId          Int
+    createdAt       DateTime      @default(now())
+    confirmed       Boolean       @default(false)
+    user            User          @relation(fields: [userId], references: [id])
+    comments        Comment[]
+    transactions    Transaction[]
+
+    @@index([userId])
+}
+
+model Comment {
+    id         Int      @id @default(autoincrement())
+    content    String
+    createdAt  DateTime @default(now())
+    userId     Int
+    memeCoinId Int
+    user       User     @relation(fields: [userId], references: [id])
+    memeCoin   MemeCoin @relation(fields: [memeCoinId], references: [id])
+
+    @@index([userId])
+    @@index([memeCoinId])
+}
+
+model Transaction {
+    id         Int      @id @default(autoincrement())
+    amount     Float
+    userId     Int
+    memeCoinId Int
+    createdAt  DateTime @default(now())
+    user       User     @relation(fields: [userId], references: [id])
+    memeCoin   MemeCoin @relation(fields: [memeCoinId], references: [id])
+
+    @@index([userId])
+    @@index([memeCoinId])
+}
